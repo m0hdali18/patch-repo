@@ -9,7 +9,7 @@
 
     - name: reading details from patch_manifest 
       include_vars:
-        file: /root/builds/patches/{{ schema_name }}/{{ jira_id }}/patch.yml
+        file: patches/{{ schema_name }}/{{ jira_id }}/patch.yml
         name: patch_manifest
 
     - shell: "echo {{ tomcat_restart }}"
@@ -57,7 +57,7 @@
   
   tasks:
     - name: Copy files to destination
-      copy: src=/root/builds/patches/{{ schema_name }}/{{ jira_id }}/{{ item | basename }} dest=/root/webapps/{{ hostvars['localhost']['command_output_loc'].stdout }}/{{ item.split("/")[2:] | join("/")}}
+      copy: src=patches/{{ schema_name }}/{{ jira_id }}/{{ item | basename }} dest=/root/webapps/{{ hostvars['localhost']['command_output_loc'].stdout }}/{{ item.split("/")[2:] | join("/")}}
       delegate_to: "{{ server_name }}"
       with_items: "{{ patch_manifest.file_paths }}"
       register: file_copy

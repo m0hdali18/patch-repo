@@ -1,0 +1,7 @@
+---
+vars:
+
+schema_name: samirabbas
+insta_ui_commit_hash:   4c085f4dcfd28a51b5ad99592f5ab0985daee8fa
+file_paths:
+ - /instahms/WEB-INF/classes/com/insta/hms/common/StdReportDesc.class
