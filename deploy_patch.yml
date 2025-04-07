@@ -1,0 +1,122 @@
+---
+- hosts: localhost
+
+  vars:
+    tomcat_restart: "{{ tomcat_restart }}"
+    location: "{{ location }}"
+
+  tasks:  
+
+    - name: reading details from patch_manifest 
+      include_vars:
+        file: /root/builds/patches/{{ schema_name }}/{{ jira_id }}/patch.yml
+        name: patch_manifest
+
+    - shell: "echo {{ tomcat_restart }}"
+      register: command_output_tr
+
+    - shell: "echo {{ location }}"
+      register: command_output_loc
+  
+- hosts: "{{ server_name }}"
+
+  tasks:
+
+    - name: stat file
+      stat: 
+        path: "/root/webapps/{{ hostvars['localhost']['command_output_loc'].stdout }}/{{ item.split('/')[2:] | join('/')}}"
+      with_items: "{{ hostvars['localhost']['patch_manifest'].file_paths }}" 
+      register: file_stat
+
+    - set_fact: tr={{ tomcat_restart }}
+
+    - shell: /etc/init.d/tomcat stop
+      when: tr == "yes"
+
+    - wait_for: timeout=15
+      when: tr == "yes"
+
+    - name: Move files to file_bkp if exists
+      shell: mv {{ item.invocation.module_args.path.split('$') | join('\$') }} {{ item.invocation.module_args.path.split('$') | join('\$') }}.bkp
+      when: item.stat.exists == true
+      with_items: "{{ file_stat.results }}" 
+
+    - shell: "grep 'insta.ui.commit.hash' /root/webapps/{{ hostvars['localhost']['command_output_loc'].stdout }}/WEB-INF/classes/java/resources/application.properties | cut -d '=' -f2"
+      register: command_output
+
+    - set_fact:
+       current_insta_ui_commit_hash: "{{ command_output.stdout }}"
+
+    - lineinfile:
+       path: /root/webapps/{{ hostvars['localhost']['command_output_loc'].stdout }}/WEB-INF/classes/java/resources/application.properties
+       regexp: 'insta.ui.commit.hash ='
+       line: "insta.ui.commit.hash = {{ hostvars['localhost']['patch_manifest'].insta_ui_commit_hash }}"
+      when :  current_insta_ui_commit_hash != "" and hostvars['localhost']['patch_manifest'].insta_ui_commit_hash is defined
+
+- hosts: localhost
+  
+  tasks:
+    - name: Copy files to destination
+      copy: src=/root/builds/patches/{{ schema_name }}/{{ jira_id }}/{{ item | basename }} dest=/root/webapps/{{ hostvars['localhost']['command_output_loc'].stdout }}/{{ item.split("/")[2:] | join("/")}}
+      delegate_to: "{{ server_name }}"
+      with_items: "{{ patch_manifest.file_paths }}"
+      register: file_copy
+
+- hosts: "{{ server_name }}"
+
+  tasks:      
+
+    - file: dest=/root/webapps/{{ hostvars['localhost']['command_output_loc'].stdout }}/{{ item.split("/")[2:] | join("/")}}  mode=a+x
+      with_items: "{{ hostvars['localhost']['patch_manifest'].file_paths }}"
+
+    - name: Start Tomcat
+      command: "nohup sudo service tomcat start"
+      register: tomcat_started
+      when: hostvars['localhost']['file_copy']|success and tr == "yes"
+
+    - name: wait for 3 min 
+      wait_for: timeout=180
+      when: tomcat_started|success and tr == "yes"
+ 
+    - uri:
+       url: http://127.0.0.1/instahms/loginForm.do
+       method: GET
+       validate_certs: "no"
+      register: resp
+      ignore_errors: yes
+      # when: tomcat_started|success
+
+    - name: Stop Tomcat
+      command: "nohup sudo service tomcat stop"   
+      register: tomcat_stopped1
+      when: resp.status!=200 and tr == "yes"
+
+    - name: delete new files
+      command: rm {{ item.invocation.module_args.path }}
+      with_items: "{{ file_stat.results }}" 
+      when: tr == "yes" and item.stat.exists == false and tomcat_stopped1|success and resp.status!=200
+
+    - name: Restore backedup files
+      command: mv {{ item.invocation.module_args.path }}.bkp {{ item.invocation.module_args.path }}
+      with_items: "{{ file_stat.results }}" 
+      when: tr == "yes" and item.stat.exists == true and tomcat_stopped1|success and resp.status!=200
+
+    - wait_for: timeout=15
+      when: tr == "yes"
+
+    - name: Start Tomcat
+      command: "nohup sudo service tomcat start"
+      register: tomcat_started1
+      when: tomcat_stopped1|success and resp.status!=200 and tr == "yes"
+
+- hosts: localhost
+  tasks:
+    - set_fact: name="{{ server_name }}"
+
+    - name: Send Deployment status
+      command: python /root/notify_pd_status.py success {{ hostvars[name]['resp'].msg }}
+      when: hostvars[name]['resp'].status==200
+
+    - name:  send Deployment status
+      command: python /root/notify_pd_status.py fail {{ hostvars[name]['resp'].msg }}
+      when: hostvars[name]['resp'].status!=200
