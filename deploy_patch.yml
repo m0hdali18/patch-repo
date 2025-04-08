@@ -114,9 +114,9 @@
     - set_fact: name="{{ server_name }}"
 
     - name: Send Deployment status
-      command: python /root/notify_pd_status.py success {{ hostvars[name]['resp'].msg }}
+      command: python notify_pd_status.py success {{ hostvars[name]['resp'].msg }}
       when: hostvars[name]['resp'].status==200
 
     - name:  send Deployment status
-      command: python /root/notify_pd_status.py fail {{ hostvars[name]['resp'].msg }}
+      command: python notify_pd_status.py fail {{ hostvars[name]['resp'].msg }}
       when: hostvars[name]['resp'].status!=200
