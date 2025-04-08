@@ -76,7 +76,7 @@
 
     - name: wait for 3 min 
       wait_for: timeout=180
-      when: tomcat_started|success and tr == "yes"
+      when: tomcat_started is succeeded and tr == "yes"
  
     - uri:
        url: http://127.0.0.1/instahms/loginForm.do
