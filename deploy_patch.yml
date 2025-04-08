@@ -72,7 +72,7 @@
     - name: Start Tomcat
       command: "nohup sudo service tomcat start"
       register: tomcat_started
-      when: hostvars['localhost']['file_copy']|success and tr == "yes"
+      when: hostvars['localhost']['file_copy'] is defined and tr == "yes"
 
     - name: wait for 3 min 
       wait_for: timeout=180
