@@ -107,7 +107,7 @@
     - name: Start Tomcat
       command: "nohup sudo service tomcat start"
       register: tomcat_started1
-      when: tomcat_stopped1|success and resp.status!=200 and tr == "yes"
+      when: tomcat_stopped1 is succeeded and resp.status != 200 and tr == "yes"
 
 - hosts: localhost
   tasks:
