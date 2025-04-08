@@ -1,0 +1,7 @@
+{
+"smtp_hostname":"smtp.mailgun.org",
+"smtp_login":"postmaster@sandboxdc1daafc8b2d4065ace0d5e6ba058569.mailgun.org",
+"smtp_password":"test123",
+"mail_from" : "insta-devops@practo.com",
+"mail_to": "insta-devops@practo.com"
+}

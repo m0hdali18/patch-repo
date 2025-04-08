@@ -4,7 +4,7 @@ import json
 
 from email.mime.text import MIMEText
 
-config = json.loads(open('/root/mail_config.json').read())
+config = json.loads(open('mail_config.json').read())
 
 success_msg = MIMEText('New Patch Deployed successfully.')
 failure_msg = MIMEText('New Patch failed, so restored previous patch.')
