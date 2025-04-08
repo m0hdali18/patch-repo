@@ -109,14 +109,14 @@
       register: tomcat_started1
       when: tomcat_stopped1 is succeeded and resp.status != 200 and tr == "yes"
 
-- hosts: localhost
-  tasks:
-    - set_fact: name="{{ server_name }}"
+#- hosts: localhost
+#  tasks:
+#    - set_fact: name="{{ server_name }}"
 
-    - name: Send Deployment status
-      command: python notify_pd_status.py success {{ hostvars[name]['resp'].msg }}
-      when: hostvars[name]['resp'].status==200
+#    - name: Send Deployment status
+#      command: python notify_pd_status.py success {{ hostvars[name]['resp'].msg }}
+#      when: hostvars[name]['resp'].status==200
 
-    - name:  send Deployment status
-      command: python notify_pd_status.py fail {{ hostvars[name]['resp'].msg }}
-      when: hostvars[name]['resp'].status!=200
+#    - name:  send Deployment status
+#      command: python notify_pd_status.py fail {{ hostvars[name]['resp'].msg }}
+#      when: hostvars[name]['resp'].status!=200
